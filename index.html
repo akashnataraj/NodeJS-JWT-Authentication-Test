@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>Login</title>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"
+      integrity="sha512-quHCp3WbBNkwLfYUMd+KwBAgpVukJu5MncuQaWXgCrfgcxCJAq/fo+oqrRKOj+UKEmyMCG3tb8RB63W+EmrOBg=="
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <style>
+      .center {
+        margin: 0;
+        position: absolute;
+        top: 35%;
+        left: 50%;
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <div class="main container">
+        <h2 class="text-center mb-4">Login</h2>
+        <div class="form-group">
+          <input
+            class="form-control"
+            type="text"
+            name="username"
+            placeholder="Username"
+            id="username"
+          />
+        </div>
+        <div class="form-group">
+          <input
+            class="form-control"
+            type="password"
+            name="password"
+            placeholder="Password"
+            id="password"
+          />
+        </div>
+        <div class="form-check">
+          <button class="btn btn-success mr-3" onclick="login()">Login</button>
+          <button class="btn btn-primary mr-3" onclick="getDashboard()">
+            Dashboard
+          </button>
+          <button class="btn btn-info mr-3" onclick="getSettings()">
+            Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var flag = 0;
+      setInterval(function () {
+        const token = localStorage.getItem("jwt");
+        if (token != null) {
+          var exp = JSON.parse(atob(token.split('.')[1])).exp;
+          if (new Date().getTime() > exp * 1000) {
+            flag=0;
+            alert("Session has expired, Please Login");
+            localStorage.clear();
+            window.location.replace("http://localhost:3000/");
+          }
+          if (flag==1 && new Date().getTime() + 30000 > exp * 1000) {
+            flag=0;
+            alert("Session will expire in 30 seconds");
+          }
+        }
+      }, 3000);
+
+      function login() {
+        const data = {
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value,
+        };
+        axios.post("/api/login", data).then((res) => {
+          console.log(res);
+          document.getElementById("username").value = "";
+          document.getElementById("password").value = "";
+          if (res && res.data && res.data.success) {
+            flag=1;
+            const token = res.data.token;
+            localStorage.setItem("jwt", token);
+            getDashboard();
+          }
+        });
+      }
+
+      function getDashboard() {
+        const token = localStorage.getItem("jwt");
+        axios
+          .get("/api/dashboard", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+          .then((res) => {
+            if (res && res.data && res.data.success) {
+              history.pushState(null, null, "dashboard");
+              document.querySelector(".main").innerHTML =
+                "<h2 class='text-center mb-4'>Dashboard</h2>" +
+                res.data.myContent;
+            } else {
+              alert("Please Login");
+            }
+          });
+      }
+
+      function getSettings() {
+        const token = localStorage.getItem("jwt");
+        axios
+          .get("/api/settings", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+          .then((res) => {
+            if (res && res.data && res.data.success) {
+              history.pushState(null, null, "settings");
+              document.querySelector(".main").innerHTML =
+                "<h2 class='text-center mb-4'>Settings</h2>" +
+                res.data.myContent;
+            } else {
+              alert("Please Login");
+            }
+          });
+      }
+    </script>
+  </body>
+</html>
